@@ -31,7 +31,7 @@ kbp = {
     ffTemplate: '\
       <div class="key"> \
         <button id="reset_keyX">Regenerate</button> \
-        <input type="text" id="keyX" value="PASSWORD" /> \
+        <input type="text" class="password" id="keyX" value="PASSWORD" /> \
       </div>',
 
     // Fill in form template

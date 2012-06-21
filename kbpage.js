@@ -7,24 +7,39 @@ kbp = {
 
     // Bind input change events
     bind_input: function() {
-      kbp.bindNumFriendsChange();
+      $('#num_keys').change(kbp.generateAllFriendKeys);
+      $('#num_keys').change(kbp.checkUnlockKeys);
+      $('#key_len').change(kbp.generateAllFriendKeys);
+      $('#num_keys').change();
     },
 
     // Event handler for changing number of friends
-    bindNumFriendsChange: function() {
-        $('#num_keys').change(function(ev) {
-            var gk = $('#generated_keys');
-            gk.empty();
-            var n_keys = parseInt($('#num_keys option:selected').text());
-            for(var i = 0; i < n_keys; i++){
-              gk.append(kbp.mkFriendKey(i, keybearer.makePassword(6)));
-              $('#reset_key' + i).click(function(ev) {
-                $('#' + ev.currentTarget.id.replace('reset_', '')).
-                  val(keybearer.makePassword(6));
-              });
-            }
+    generateAllFriendKeys: function() {
+        var gk = $('#generated_keys');
+        gk.empty();
+        var n_keys = $('#num_keys option:selected').val();
+        for(var i = 0; i < n_keys; i++){
+          gk.append(kbp.mkFriendKey(i, keybearer.makePassword($('#key_len').val())));
+          $('#reset_key' + i).click(function(ev) {
+            $('#' + ev.currentTarget.id.replace('reset_', '')).
+              val(keybearer.makepassword($('#key_len').val()));
         });
-        $('#num_keys').change();
+      }
+    },
+
+    // Ensure more friends aren't needed to unlock than exist
+    checkUnlockKeys: function (){
+        var max_sel = $('#num_keys option:selected').val();
+        var sel = Math.min(max_sel,
+                           $('#num_unlock_keys option:selected').val());
+        // always rebuild the list. simple special cases could avoid this
+        var nuk = $('#num_unlock_keys');
+        nuk.find('option').remove();
+        for(var i = 1; i <= max_sel; i++){
+            nuk.append('<option value=I>I</option>'.
+                    replace('=I', '=I' + (i == sel ? ' selected' : '')).
+                    replace(/I/g, i));
+        }
     },
 
     // Friend form template

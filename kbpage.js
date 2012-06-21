@@ -7,14 +7,14 @@ kbp = {
 
     // Bind input change events
     bind_input: function() {
-      $('#num_pass').change(kbp.generateAllFriendKeys);
-      $('#num_pass').change(kbp.checkUnlockKeys);
-      $('#pass_len').change(kbp.generateAllFriendKeys);
+      $('#num_pass').change(kbp.generateAllFriendPass);
+      $('#num_pass').change(kbp.checkUnlockPass);
+      $('#pass_len').change(kbp.generateAllFriendPass);
       $('#num_pass').change();
     },
 
     // Event handler for changing number of friends
-    generateAllFriendKeys: function() {
+    generateAllFriendPass: function() {
         var gk = $('#generated_pass');
         gk.empty();
         var n_keys = $('#num_pass option:selected').val();
@@ -28,13 +28,13 @@ kbp = {
     },
 
     // Ensure more friends aren't needed to unlock than exist
-    checkUnlockKeys: function (){
+    checkUnlockPass: function (){
         var max_sel = $('#num_pass option:selected').val();
         var sel = Math.min(max_sel,
                            $('#num_unlock_pass option:selected').val());
         // always rebuild the list. simple special cases could avoid this
         var nuk = $('#num_unlock_pass');
-        nuk.find('option').remove();
+        nuk.empty();
         for(var i = 1; i <= max_sel; i++){
             nuk.append('<option value=I>I</option>'.
                     replace('=I', '=I' + (i == sel ? ' selected' : '')).
@@ -50,7 +50,7 @@ kbp = {
       </div>',
 
     // Fill in form template
-    mkFriendKey: function(friendID, password){
+    mkFriendPass: function(friendID, password){
         return kbp.ffTemplate.replace(/passX/g, 'pass' + friendID).
             replace('PASSWORD', password);
     }

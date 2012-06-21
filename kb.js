@@ -1,8 +1,9 @@
 keybearer = {
     // Private variables
     _wordlist: [],
+    _badngramlist: [],
     // Load the wordlist for password generation
-    loadWordlist: function(url, callback) {
+    loadWordlist: function(url, field, callback) {
         var startTime = new Date();
         var endTime;
         var txtFile = new XMLHttpRequest();
@@ -10,9 +11,9 @@ keybearer = {
         txtFile.onreadystatechange = function() {
             if (txtFile.readyState == 4 && txtFile.status === 200) {  // When password list loaded
                 allText = txtFile.responseText;
-                keybearer._wordlist = txtFile.responseText.split("\n");
+                keybearer[field] = txtFile.responseText.split("\n");
                 endTime = new Date();
-                sjcl.random.addEntropy(endTime.getTime() - startTime.getTime(), 0, "wordlist.loadtime");
+                sjcl.random.addEntropy(endTime.getTime() - startTime.getTime(), 0, "wordlist." + field + ".loadtime");
                 callback();
             }
         }
@@ -26,7 +27,14 @@ keybearer = {
         for(var i = 0; i < length; i++){
             pwd[i] = this._wordlist[selections[i]];
         }
-        return pwd
+        // Ensure no known bad combinations are displayed
+        var joined = pwd.join(' ');
+        for(var i = 0; i < this._badngramlist.length; i++){
+            if(joined.indexOf(this._badngramlist[i]) !== -1){
+                return this.makePassword(length, paranoia);
+            }
+        }
+        return joined;
     },
 
     // Generate array of num integers on [0, end)

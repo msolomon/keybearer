@@ -1,7 +1,8 @@
 kbp = {
     // Prepare keybearer
-    init: function(wordlistURL) {
-        keybearer.loadWordlist(wordlistURL, kbp.bind_input);
+    init: function(wordlistURL, badngramlistURL) {
+        keybearer.loadWordlist(wordlistURL, '_wordlist', kbp.bind_input);
+        keybearer.loadWordlist(badngramlistURL, '_badngramlist', kbp.bind_input);
     },
 
     // Bind input change events
@@ -12,15 +13,14 @@ kbp = {
     // Event handler for changing number of friends
     bindNumFriendsChange: function() {
         $('#num_keys').change(function(ev) {
-            console.log(ev);
             var gk = $('#generated_keys');
             gk.empty();
             var n_keys = parseInt($('#num_keys option:selected').text());
             for(var i = 0; i < n_keys; i++){
-              gk.append(kbp.mkFriendKey(i, keybearer.makePassword(6).join(' ')));
+              gk.append(kbp.mkFriendKey(i, keybearer.makePassword(6)));
               $('#reset_key' + i).click(function(ev) {
                 $('#' + ev.currentTarget.id.replace('reset_', '')).
-                  val(keybearer.makePassword(6).join(' '));
+                  val(keybearer.makePassword(6));
               });
             }
         });

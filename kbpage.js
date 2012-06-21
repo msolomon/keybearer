@@ -7,33 +7,33 @@ kbp = {
 
     // Bind input change events
     bind_input: function() {
-      $('#num_keys').change(kbp.generateAllFriendKeys);
-      $('#num_keys').change(kbp.checkUnlockKeys);
-      $('#key_len').change(kbp.generateAllFriendKeys);
-      $('#num_keys').change();
+      $('#num_pass').change(kbp.generateAllFriendKeys);
+      $('#num_pass').change(kbp.checkUnlockKeys);
+      $('#pass_len').change(kbp.generateAllFriendKeys);
+      $('#num_pass').change();
     },
 
     // Event handler for changing number of friends
     generateAllFriendKeys: function() {
-        var gk = $('#generated_keys');
+        var gk = $('#generated_pass');
         gk.empty();
-        var n_keys = $('#num_keys option:selected').val();
+        var n_keys = $('#num_pass option:selected').val();
         for(var i = 0; i < n_keys; i++){
-          gk.append(kbp.mkFriendKey(i, keybearer.makePassword($('#key_len').val())));
-          $('#reset_key' + i).click(function(ev) {
+          gk.append(kbp.mkFriendKey(i, keybearer.makePassword($('#pass_len').val())));
+          $('#reset_pass' + i).click(function(ev) {
             $('#' + ev.currentTarget.id.replace('reset_', '')).
-              val(keybearer.makepassword($('#key_len').val()));
+              val(keybearer.makePassword($('#pass_len').val()));
         });
       }
     },
 
     // Ensure more friends aren't needed to unlock than exist
     checkUnlockKeys: function (){
-        var max_sel = $('#num_keys option:selected').val();
+        var max_sel = $('#num_pass option:selected').val();
         var sel = Math.min(max_sel,
-                           $('#num_unlock_keys option:selected').val());
+                           $('#num_unlock_pass option:selected').val());
         // always rebuild the list. simple special cases could avoid this
-        var nuk = $('#num_unlock_keys');
+        var nuk = $('#num_unlock_pass');
         nuk.find('option').remove();
         for(var i = 1; i <= max_sel; i++){
             nuk.append('<option value=I>I</option>'.
@@ -44,14 +44,14 @@ kbp = {
 
     // Friend form template
     ffTemplate: '\
-      <div class="key"> \
-        <button id="reset_keyX">Regenerate</button> \
-        <input type="text" class="password" id="keyX" value="PASSWORD" /> \
+      <div class="pass"> \
+        <button id="reset_passX">Regenerate</button> \
+        <input type="text" class="password" id="passX" value="PASSWORD" /> \
       </div>',
 
     // Fill in form template
     mkFriendKey: function(friendID, password){
-        return kbp.ffTemplate.replace(/keyX/g, 'key' + friendID).
+        return kbp.ffTemplate.replace(/passX/g, 'pass' + friendID).
             replace('PASSWORD', password);
     }
 }

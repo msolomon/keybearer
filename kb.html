@@ -15,14 +15,14 @@
   <script type="text/javascript" src="kb.js"></script>
   <script type="text/javascript" src="kbpage.js"></script>
 </head>
-<body onload="loaded(); kbp.init('wordlist.txt', 'badngramlist.txt');"
+<body onload="loaded(); kbp.init('wordlist.txt', 'badngramlist.txt');">
   <h1>SJCL demo</h1>
 
   <div id="keys">
   <h2> Keys </h2>
     <label>
       Friend key length:
-      <select id="key_len">
+      <select id="pass_len">
         <option value=6 selected>6</option>
         <option value=7>7</option>
         <option value=8>8</option>
@@ -32,7 +32,7 @@
     </label>
     <label>
       Number of friends:
-      <select id="num_keys">
+      <select id="num_pass">
         <option value=2>2</option>
         <option value=3>3</option>
         <option value=4>4</option>
@@ -44,11 +44,11 @@
     </label>
     <label>
       Friends needed to unlock:
-      <select id="num_unlock_keys">
+      <select id="num_unlock_pass">
         <option value=3>3</option>
       </select>
     </label>
-    <div id="generated_keys"></div>
+    <div id="generated_pass"></div>
   </div>
   <div class="header">
   <p>This page is a demo of the Stanford Javascript Crypto Library. To get started, just type in a password in the left pane and a secret message in the middle pane, then click "encrypt". Encryption takes place in your browser and we never see the plaintext.</p>
@@ -74,7 +74,7 @@
       <h2>Key Derivation</h2>
       <div class="section">
         <div>
-          <label for="salt"">Salt:</label>
+          <label for="salt">Salt:</label>
           <a class="random floatright" href="javascript:randomize('salt',2,0)">random</a>
         </div>
         <input type="text" id="salt" class="wide hex" autocomplete="off" size="17" maxlength="35"/>

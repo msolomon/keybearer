@@ -15,11 +15,13 @@
   <script type="text/javascript" src="kb.js"></script>
   <script type="text/javascript" src="kbpage.js"></script>
 </head>
-<body onload="loaded(); kbp.init('wordlist.txt', 'badngramlist.txt');">
+<body onload="kbp.init('wordlist.txt', 'badngramlist.txt');">
   <h1>SJCL demo</h1>
 
   <div id="keys">
   <h2> Keys </h2>
+    <p id="entropy_msg">Please move the mouse to seed the random number generator:</p>
+    <p id="entropy_frac">0.0</p>
     <label>
       Friend key length:
       <select id="pass_len">

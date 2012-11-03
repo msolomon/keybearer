@@ -13,14 +13,15 @@ keybearer = {
                 allText = txtFile.responseText;
                 keybearer[field] = txtFile.responseText.split("\n");
                 endTime = new Date();
-                sjcl.random.addEntropy(endTime.getTime() - startTime.getTime(), 0, "wordlist." + field + ".loadtime");
+                // use load time to help seed RNG
+                sjcl.random.addEntropy(endTime.getTime() - startTime.getTime(), 2, "wordlist." + field + ".loadtime");
                 callback();
             }
-        }
+        };
         txtFile.send();
     },
 
-    // Generate a password from wordlist of given # of words
+    // Generate a password from wordlist using given # of words
     makePassword: function(length, paranoia) {
         var pwd = [];
         var selections = this.randto(this._wordlist.length, length, paranoia);
@@ -29,7 +30,7 @@ keybearer = {
         }
         // Ensure no known bad combinations are displayed
         var joined = pwd.join(' ');
-        for(var i = 0; i < this._badngramlist.length; i++){
+        for(i = 0; i < this._badngramlist.length; i++){
             if(joined.indexOf(this._badngramlist[i]) !== -1){
                 return this.makePassword(length, paranoia);
             }
@@ -46,8 +47,8 @@ keybearer = {
                 return restrictRange(sjcl.random.randomWords(num, paranoia));
             }
             return x % end;
-        }
+        };
         return sjcl.random.randomWords(num, paranoia).map(restrictRange);
     }
-}
+};
 

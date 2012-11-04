@@ -6,8 +6,7 @@
 <head>
   <title>SJCL demo</title>
   <link rel="stylesheet" type="text/css" href="sjcl/demo/example.css"/>
-  <link rel="stylesheet/less" type="text/css" href="kbpage.less">
-  <script type="text/javascript" src="less-1.3.0.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="kbpage.css">
   <script type="text/javascript" src="sjcl/sjcl.js"></script>
   <script type="text/javascript" src="sjcl/demo/form.js"></script>
   <script type="text/javascript" src="sjcl/demo/example.js"></script>
@@ -50,7 +49,15 @@
         <option value=3>3</option>
       </select>
     </label>
+    <label>
+        Keys to be generated:
+        <label id="nkeys_to_gen"></p>
+    </label>
     <div id="generated_pass"></div>
+  </div>
+  <div>
+  <button id="genkeys">Generate keys</button>
+  <div id="generatedkeys"></div>
   </div>
   <div class="header">
   <p>This page is a demo of the Stanford Javascript Crypto Library. To get started, just type in a password in the left pane and a secret message in the middle pane, then click "encrypt". Encryption takes place in your browser and we never see the plaintext.</p>

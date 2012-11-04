@@ -18,7 +18,7 @@
   <h1>SJCL demo</h1>
 
   <div id="keys">
-  <h2> Keys </h2>
+  <h2> Encryption </h2>
     <p id="entropy_msg">Please move the mouse to seed the random number generator:</p>
     <p id="entropy_frac">0.0</p>
     <label>
@@ -56,6 +56,7 @@
     <div id="generated_pass"></div>
   </div>
   <div>
+    <p>This filename will be stored in unauthenticated plain text</p>
     <input type="file" id="secretfile" name="file" />
     <span id="secretfileprogress">
   </div>
@@ -67,6 +68,19 @@
     <div id="encdownloadlink"></div>
   </div>
   </div>
+
+
+
+  <h2>Decrypt</h2>
+  <div id="decryptsection">
+    <button id="decrypt">Decrypt</button>
+    <label>Key checking: <span id="keycheckprogress">0%</span></label>
+    <label>Data decryption: <span id="decryptionprogress">0%</span></label>
+    <div id="decdownloadlink"></div>
+  </div>
+  </div>
+
+
   <div class="header">
   <p>This page is a demo of the Stanford Javascript Crypto Library. To get started, just type in a password in the left pane and a secret message in the middle pane, then click "encrypt". Encryption takes place in your browser and we never see the plaintext.</p>
   

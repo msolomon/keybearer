@@ -7,10 +7,15 @@ keybearer = {
 
     _badngramlist: [],
     _salt: null,
-    _plaintext: null, // bitarray encoded secret data
-    _cipherobj: null, // base64 encoded encrypted data in resultant JSON object
+    _plaintext: null, // bitArray of file to be encrypted
+    _cipherobj: null, // base64 encoded encrypted data in resultant object
+    _passwords: [], // plaintext passwords
     _keys: [], // PBKDF2 strengthened passwords result
     _master: null, // the key that actually encrypts the plaintext
+    _filename: null, // the unencrypted filename for use on retrieval
+    _nPaswords: null, // number of passwords total
+    _nToUnlock: null, // number of passwords needed to unlock
+    _lastMetadata: null, // last used metadata object
     // Load the wordlist for password generation
     loadWordlist: function(url, field, callback) {
         var startTime = new Date();
@@ -80,6 +85,9 @@ keybearer = {
 
     // Generate all possible password combinations needed given password list and number needed
     makeCombinedPasswords: function(passwords, nToUnlock){
+        // store nPasswords and nToUnlock for later use
+        this._nPasswords = passwords.length;
+        this._nToUnlock = nToUnlock;
         // recursively generate combinations (in order)
         var combine = function(passwords, output, prefix, levels_left, start){
             if(levels_left <= 0){
@@ -131,9 +139,9 @@ keybearer = {
         this._master = sjcl.random.randomWords(this.aes_key_strength);
     },
 
-    // Encrypt the plaintext
-    encryptPlaintext: function(){
-        var p = { adata: '',
+    // Generate an object storing metadata
+    makeMetadataObject: function(){
+        return  { adata: '',
                   iter: this.pbkdf2_iterations,
                   mode: this.aes_cipher_mode,
                   cipher: 'aes',
@@ -142,40 +150,84 @@ keybearer = {
                   salt: this._salt,
                   iv: sjcl.random.randomWords(4),
                   v: 1,
-                  ct: null
+                  ct: null,
+                  fn: this._filename,
+                  nkeys: this._nPasswords,
+                  nunlock: this._nToUnlock
                 };
+    },
+
+    // Encrypt the plaintext
+    encryptPlaintext: function(){
+        var p = this.makeMetadataObject();
+        this._lastMetadata = p;
         var prp = new sjcl.cipher[p.cipher](this._master);
-        p.ct = sjcl.mode[p.mode].encrypt(prp, this._plaintext, p.iv, p.adata, p.ts);
+        p.ct = sjcl.mode[p.mode].encrypt(
+                                        prp,
+                                        this._plaintext,
+                                        p.iv,
+                                        p.adata,
+                                        p.ts);
         this._cipherobj = p;
         this.augmentWithEncryptedKeys(this._cipherobj);
     },
 
     // Add the master key, encrypted by every valid combination of passwords
     augmentWithEncryptedKeys: function(obj){
+        var kivs = []; // IVs, one per key
         var encKeys = [];
         for(var i = 0; i < this._keys.length; i++){
+            var iv = sjcl.random.randomWords(4);
+            kivs.push(sjcl.codec.base64.fromBits(iv));
             var prp = new sjcl.cipher[obj.cipher](this._keys[i]);
             encKeys.push(sjcl.codec.base64.fromBits(sjcl.mode[obj.mode].encrypt(
                                                     prp,
                                                     this._master,
-                                                    obj.iv,
+                                                    iv,
                                                     '',
                                                     obj.ts)));
         }
+        obj.kivs = kivs;
         obj.keys = encKeys;
-        obj.salt = sjcl.codec.base64.fromBits(obj.salt); // base64 encode output
-        obj.iv = sjcl.codec.base64.fromBits(obj.iv); // base64 encode output
-        obj.ct = sjcl.codec.base64.fromBits(obj.ct); // base64 encode output
+        // base64 encode output
+        obj.salt = sjcl.codec.base64.fromBits(obj.salt);
+        obj.iv = sjcl.codec.base64.fromBits(obj.iv);
+        obj.ct = sjcl.codec.base64.fromBits(obj.ct);
     },
 
-    // Set our binarystring secret
-    setSecret: function(secret){
-        this._plaintext = sjcl.codec.bytes.toBits(secret);
+    // Turn metadata into relevant metadata + secret data
+    changeToSecretData: function(obj){
+        obj.pwds = this._passwords; // store the passwords
+        // not truly happy about this double conversion
+        obj.pt = sjcl.codec.base64.fromBits(this._plaintext);
+        delete obj.salt;
+        delete obj.iv;
+        delete obj.ct;
+    },
+
+    // Set our binary file contents
+    setPlaintext: function(data){
+        this._plaintext = sjcl.codec.bytes.toBits(data);
+    },
+
+    // Set our unencrypted secret
+    setFileName: function(fname){
+        this._filename = fname;
     },
 
     // Reset generated keys
     resetKeys: function(){
         this._keys = [];
+    },
+
+    // checks if data has been loaded
+    isPlaintextReady: function(){
+        return(this._plaintext !== null);
+    },
+
+    // parses data into our encrypted object
+    convertDataToJSON: function(data){
+        this._cipherobj = JSON.parse(data);
     },
 
     // Get the cipherobject

@@ -51,6 +51,7 @@ kbp = {
       $('#pass_len').change(kbp.generateAllFriendPass);
       $('#num_pass').change();
       $('#encrypt').click(kbp.encrypt);
+      $('#decrypt').click(kbp.decrypt);
       $('#secretfile').change(kbp.chooseFile);
     },
 
@@ -104,6 +105,10 @@ kbp = {
 
     // Generate keys and encrypt
     encrypt: function(){
+        if(!keybearer.isPlaintextReady()){
+            alert("You must load a file before before encrypting it!");
+            return;
+        }
         var passwords = kbp.getAllPass();
         var encrypt_pt = function(){
             keybearer.makeAESKey();
@@ -139,7 +144,8 @@ kbp = {
 
     // Fill in form template
     mkFriendPass: function(friendID, password){
-        return kbp.ffTemplate.replace(/passX/g, 'pass' + friendID).
+        return kbp.ffTemplate.
+            replace(/passX/g, 'pass' + friendID).
             replace('PASSWORD', password);
     },
 
@@ -162,11 +168,18 @@ kbp = {
         var reader = new FileReader();
         // event handler for when secret file is loaded
         reader.onload = function(evt){
-            keybearer.setSecret(evt.target.result);
+            keybearer.setPlaintext(evt.target.result);
+            keybearer.setFileName(file.name);
         };
         reader.onprogress = function(evt){
             $('#secretfileprogress').text(evt.loaded/evt.total * 100 + '%');
         };
         reader.readAsBinaryString(file);
+    },
+
+    // Begin the decryption process
+    decrypt: function(){
+        console.log(a);
     }
+
 };

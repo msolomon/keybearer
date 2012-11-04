@@ -174,20 +174,19 @@ keybearer = {
 
     // Add the master key, encrypted by every valid combination of passwords
     augmentWithEncryptedKeys: function(obj){
-        var kivs = []; // IVs, one per key
         var encKeys = [];
         for(var i = 0; i < this._keys.length; i++){
             var iv = sjcl.random.randomWords(4);
-            kivs.push(sjcl.codec.base64.fromBits(iv));
             var prp = new sjcl.cipher[obj.cipher](this._keys[i]);
-            encKeys.push(sjcl.codec.base64.fromBits(sjcl.mode[obj.mode].encrypt(
-                                                    prp,
-                                                    this._master,
-                                                    iv,
-                                                    '',
-                                                    obj.ts)));
+            var key = sjcl.mode[obj.mode].encrypt(
+                                                  prp,
+                                                  this._master,
+                                                  iv,
+                                                  '',
+                                                  obj.ts);
+            encKeys.push({"iv": sjcl.codec.base64.fromBits(iv),
+                          "key": sjcl.codec.base64.fromBits(key)});
         }
-        obj.kivs = kivs;
         obj.keys = encKeys;
         // base64 encode output
         obj.salt = sjcl.codec.base64.fromBits(obj.salt);

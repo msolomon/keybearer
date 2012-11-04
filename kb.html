@@ -51,13 +51,21 @@
     </label>
     <label>
         Keys to be generated:
-        <label id="nkeys_to_gen"></p>
+        <span id="nkeys_to_gen">
     </label>
     <div id="generated_pass"></div>
   </div>
   <div>
-  <button id="genkeys">Generate keys</button>
-  <div id="generatedkeys"></div>
+    <input type="file" id="secretfile" name="file" />
+    <span id="secretfileprogress">
+  </div>
+  <div>
+  <div id="encryptsection">
+    <button id="encrypt">Encrypt</button>
+    <label>Key generation: <span id="keygenprogress">0%</span></label>
+    <label>Data encryption: <span id="encryptionprogress">0%</span></label>
+    <div id="encdownloadlink"></div>
+  </div>
   </div>
   <div class="header">
   <p>This page is a demo of the Stanford Javascript Crypto Library. To get started, just type in a password in the left pane and a secret message in the middle pane, then click "encrypt". Encryption takes place in your browser and we never see the plaintext.</p>

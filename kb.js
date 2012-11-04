@@ -2,12 +2,15 @@ keybearer = {
     // Public settings
     salt_length: 4, // in words (bytes * 4)
     aes_key_strength: 8, // 4 = 128 bits, 6 = 192, 8 = 256
-    aes_cipher_mode: 'ocb2', // ccm or ocb2
+    aes_cipher_mode: 'ccm', // ccm or ocb2 -- ccm seems to be MUCH faster
     pbkdf2_iterations: 50, // number of key stretching iterations
-    // Private variables
-    _wordlist: [],
+
     _badngramlist: [],
     _salt: null,
+    _plaintext: null, // bitarray encoded secret data
+    _cipherobj: null, // base64 encoded encrypted data in resultant JSON object
+    _keys: [], // PBKDF2 strengthened passwords result
+    _master: null, // the key that actually encrypts the plaintext
     // Load the wordlist for password generation
     loadWordlist: function(url, field, callback) {
         var startTime = new Date();
@@ -45,16 +48,16 @@ keybearer = {
     },
 
     // Generate array of num integers on [0, end)
-    randto: function(end, num, paranoia) {
+    randto: function(end, num) {
         var maximum = Math.floor(2147483647 / end) * end; // regenerate if outside this
         var restrictRange = function(x){
             x = Math.abs(x);
             if(x >= maximum){ // the (even more) naive approach would skew distribution
-                return restrictRange(sjcl.random.randomWords(num, paranoia));
+                return restrictRange(sjcl.random.randomWords(num));
             }
             return x % end;
         };
-        return sjcl.random.randomWords(num, paranoia).map(restrictRange);
+        return sjcl.random.randomWords(num).map(restrictRange);
     },
 
     // Trim string, and collapse all whitespace between words to single space
@@ -95,7 +98,120 @@ keybearer = {
         passwords.sort();
         combine(passwords, combined, null, nToUnlock, 0);
         return combined;
+    },
+
+    // Generate all key combinations (with progress callback)
+    makeKeyCombinations: function(passwords, nToUnlock, callback){
+        callback = callback || function(x){};
+        this._keys = [];
+        var combinations = this.makeCombinedPasswords(passwords, nToUnlock);
+        // build a function chain using setTimeout so we don't TOTALLY lock up the browser
+        var makeKeyBuilder = function(idx){
+            if(idx < combinations.length){
+                return function(){
+                    setTimeout(function(){
+                        keybearer._keys[idx] = keybearer.makeKeyFromPassword(combinations[idx]);
+                        callback(keybearer._keys.length / combinations.length);
+                    }, 50);
+                    var next = makeKeyBuilder(idx + 1);
+                    next();
+                };
+            } else {
+                return function(){};
+            }
+        };
+        callback(0);
+        var keyBuilder = makeKeyBuilder(0);
+        keyBuilder();
+        return this._keys;
+    },
+
+    // Generate the encryption key
+    makeAESKey: function(){
+        this._master = sjcl.random.randomWords(this.aes_key_strength);
+    },
+
+    // Encrypt the plaintext
+    encryptPlaintext: function(){
+        var p = { adata: '',
+                  iter: this.pbkdf2_iterations,
+                  mode: this.aes_cipher_mode,
+                  cipher: 'aes',
+                  ts: 128,
+                  ks: this.aes_key_strength * 32,
+                  salt: this._salt,
+                  iv: sjcl.random.randomWords(4),
+                  v: 1,
+                  ct: null
+                };
+        var prp = new sjcl.cipher[p.cipher](this._master);
+        p.ct = sjcl.mode[p.mode].encrypt(prp, this._plaintext, p.iv, p.adata, p.ts);
+        this._cipherobj = p;
+        this.augmentWithEncryptedKeys(this._cipherobj);
+    },
+
+    // Add the master key, encrypted by every valid combination of passwords
+    augmentWithEncryptedKeys: function(obj){
+        var encKeys = [];
+        for(var i = 0; i < this._keys.length; i++){
+            var prp = new sjcl.cipher[obj.cipher](this._keys[i]);
+            encKeys.push(sjcl.codec.base64.fromBits(sjcl.mode[obj.mode].encrypt(
+                                                    prp,
+                                                    this._master,
+                                                    obj.iv,
+                                                    '',
+                                                    obj.ts)));
+        }
+        obj.keys = encKeys;
+        obj.salt = sjcl.codec.base64.fromBits(obj.salt); // base64 encode output
+        obj.iv = sjcl.codec.base64.fromBits(obj.iv); // base64 encode output
+        obj.ct = sjcl.codec.base64.fromBits(obj.ct); // base64 encode output
+    },
+
+    // Set our binarystring secret
+    setSecret: function(secret){
+        this._plaintext = sjcl.codec.bytes.toBits(secret);
+    },
+
+    // Reset generated keys
+    resetKeys: function(){
+        this._keys = [];
+    },
+
+    // Get the cipherobject
+    getCipherJSON: function(){
+        return JSON.stringify(this._cipherobj);
     }
 
 };
 
+// Copied here verbatim from codecBytes.js. Should really recompile sjcl.js instead
+sjcl.codec.bytes = {
+  /** Convert from a bitArray to an array of bytes. */
+  fromBits: function (arr) {
+    var out = [], bl = sjcl.bitArray.bitLength(arr), i, tmp;
+    for (i=0; i<bl/8; i++) {
+      if ((i&3) === 0) {
+        tmp = arr[i/4];
+      }
+      out.push(tmp >>> 24);
+      tmp <<= 8;
+    }
+    return out;
+  },
+  /** Convert from an array of bytes to a bitArray. */
+  toBits: function (bytes) {
+    var out = [], i, tmp=0;
+    for (i=0; i<bytes.length; i++) {
+      tmp = tmp << 8 | bytes[i];
+      if ((i&3) === 3) {
+        out.push(tmp);
+        tmp = 0;
+      }
+    }
+    if (i&3) {
+      out.push(sjcl.bitArray.partial(8*(i&3), tmp));
+    }
+    return out;
+  }
+};

@@ -50,7 +50,8 @@ kbp = {
       $('#num_unlock_pass').change(kbp.updateKeygenCount);
       $('#pass_len').change(kbp.generateAllFriendPass);
       $('#num_pass').change();
-      $('#genkeys').click(kbp.generateKeys);
+      $('#encrypt').click(kbp.encrypt);
+      $('#secretfile').change(kbp.chooseFile);
     },
 
     // Event handler for changing number of friends
@@ -61,6 +62,7 @@ kbp = {
         var reset = function(ev) {
            $('#' + ev.currentTarget.id.replace('reset_', '')).
             val(keybearer.makePassword($('#pass_len').val()));
+            keybearer.resetKeys();
         };
         for(var i = 0; i < n_keys; i++){
             gk.append(kbp.mkFriendPass(i, keybearer.makePassword($('#pass_len').val())));
@@ -100,17 +102,27 @@ kbp = {
         return passwords;
     },
 
-    // Generate keys
-    generateKeys: function(){
+    // Generate keys and encrypt
+    encrypt: function(){
         var passwords = kbp.getAllPass();
-        passwords = keybearer.makeCombinedPasswords(passwords, kbp.getNumUnlock());
-        for(var i = 0; i < passwords.length; i++){
-            var p = keybearer.makeKeyFromPassword(passwords[i]);
-            $('#generatedkeys').append(document.createTextNode(passwords[i]));
-            $('#generatedkeys').append('<br>');
-            $('#generatedkeys').append(document.createTextNode(sjcl.codec.base64.fromBits(p)));
-            $('#generatedkeys').append('<br>');
-        }
+        var encrypt_pt = function(){
+            keybearer.makeAESKey();
+            keybearer.encryptPlaintext();
+        };
+        keybearer.makeKeyCombinations(passwords, kbp.getNumUnlock(), function(pcnt){
+            $('#keygenprogress').text(pcnt * 100 + '%');
+            if(pcnt === 1){
+                encrypt_pt();
+                $('#encryptionprogress').text(1 * 100 + '%');
+                var blob = new Blob([keybearer.getCipherJSON()], {type: 'application/json'});
+                var link = document.createElement('a');
+                window.URL = window.URL || window.webkitURL;
+                link.href= window.URL.createObjectURL(blob);
+                link.download = 'encrypted.json';
+                link.innerHTML = 'Download encrypted JSON';
+                $('#encdownloadlink').empty().append(link);
+            }
+        });
     },
 
     updateKeygenCount: function(){
@@ -141,5 +153,20 @@ kbp = {
         };
 
         return factorial(n) / (factorial(k) * factorial(n - k));
+    },
+
+    // "upload" (read) a file in JS using HTML5 features
+    chooseFile:  function(evt){
+        var file = evt.target.files[0];
+        if(!file) return; // no file selected
+        var reader = new FileReader();
+        // event handler for when secret file is loaded
+        reader.onload = function(evt){
+            keybearer.setSecret(evt.target.result);
+        };
+        reader.onprogress = function(evt){
+            $('#secretfileprogress').text(evt.loaded/evt.total * 100 + '%');
+        };
+        reader.readAsBinaryString(file);
     }
 };

@@ -1,0 +1,16 @@
+
+.password {
+    width: 800px;
+}
+
+li.decpass {
+    margin-left: 50px;
+}
+
+input.decpassinput {
+    width: 800px;
+}
+
+.hide {
+    display: none;
+}

@@ -184,7 +184,7 @@ kbp = {
     // Friend form template
     ffTemplate: [
         '<div class="pass">',
-        '<button id="reset_passX">Regenerate</button>',
+        '<div id="reset_passX" class="btn">Regenerate</div>',
         '<input type="text" class="password" id="passX" value="PASSWORD" />',
         '</div>'
         ].join('\n'),
@@ -223,6 +223,7 @@ kbp = {
 
     // "upload" (read) a plaintext file in JS using HTML5 features
     choosePlaintextFile:  function(evt){
+        $('#secretfilename').text($('#secretfile').val());
         var file = evt.target.files[0];
         if(!file) return; // no file selected
         var reader = new FileReader();
@@ -240,6 +241,7 @@ kbp = {
 
     // "upload" (read) an encrypted file in JS using HTML5 features
     chooseEncryptedFile:  function(evt){
+        $('#decfilename').text($('#decfile').val());
         var file = evt.target.files[0];
         if(!file) return; // no file selected
         var reader = new FileReader();

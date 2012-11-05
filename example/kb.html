@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Keybearer</title>
+<link href="css/bootstrap.min.css" rel="stylesheet" media="screen" type="text/css"/>
+<link rel="stylesheet" type="text/css" href="css/kbpage.css"/>
+<script type="text/javascript" src="../sjcl/sjcl.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"/></script>
+<script type="text/javascript" src="../kb.js"></script>
+<script type="text/javascript" src="js/kbpage.js"></script>
+<script src="js/bootstrap.min.js" type="text/javascript"/></script>
+</head>
+
+<body onload="kbp.init('wordlists/wordlist.txt', 'wordlists/badngramlist.txt');">
+<h1>Keybearer</h1>
+
+<div id="encryptsection">
+
+    <h2>Encrypt</h2>
+
+    <p id="entropy_msg">Please move the mouse to seed the random number generator:</p>
+
+    <p id="entropy_frac">0.0</p>
+    <label>Friend key length:
+        <select id="pass_len">
+            <option value="6" selected="selected">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select>
+    </label>
+
+    <label>Number of friends:
+        <select id="num_pass">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected="selected">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select>
+    </label>
+
+    <label>Friends needed to unlock:
+        <select id="num_unlock_pass">
+            <option value="3" selected="selected">3</option>
+        </select>
+    </label>
+    <span>Keys to be generated:</span>
+    <span id="nkeys_to_gen">10</span>
+
+    <div id="generated_pass">
+    </div>
+</div>
+
+<div>
+    <p>This filename will be stored in unauthenticated plain text</p>
+    <label class="btn">
+        Select file
+        <input class="hide" type="file" id="secretfile" name="file"/>
+    </label>
+    <span id="secretfilename"></span>
+    <span id="secretfileprogress"></span>
+</div>
+
+<div>
+    <div id="keygensection">
+        <div class="btn" id="encrypt">Encrypt</div>
+        <label>Key generation:
+            <span id="keygenprogress">0%</span>
+        </label>
+        <label>Data encryption:
+            <span id="encryptionprogress">0%</span>
+        </label>
+
+        <div id="encdownloadlink"></div>
+    </div>
+</div>
+
+<h2>Decrypt</h2>
+
+<div id="decryptsection">
+    <div>
+        <p>Select a file to decrypt</p>
+        <label class="btn">
+            Select file
+            <input class="hide" type="file" id="decfile" name="file" />
+        </label>
+        <span id="decfilename"></span>
+        <span id="decfileprogress"></span>
+    </div>
+
+    <div id="decpass_area">
+        <span id="decfileprogress"></span>
+    </div>
+    <span id="decfileprogress">
+        <div class="btn" id="decrypt">Decrypt</div>
+        <label>Key checking:
+            <span id="keycheckprogress">0%</span>
+        </label>
+        <label>Data decryption:
+            <span id="decryptionprogress">0%</span>
+        </label>
+
+        <div id="decdownloadlink"></div>
+    </div>
+    </body>
+    </html>
+

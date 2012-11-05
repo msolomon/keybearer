@@ -13,7 +13,8 @@ keybearer = {
     _keys: [], // PBKDF2 strengthened passwords result
     _master: null, // the key that actually encrypts the plaintext
     _filename: null, // the unencrypted filename for use on retrieval
-    _nPaswords: null, // number of passwords total
+    _filetype: null, // the unencrypted MIME type for use on retrieval
+    _nPasswords: null, // number of passwords total
     _nToUnlock: null, // number of passwords needed to unlock
     _lastMetadata: null, // last used metadata object
     // Load the wordlist for password generation
@@ -54,11 +55,13 @@ keybearer = {
 
     // Generate array of num integers on [0, end)
     randto: function(end, num) {
-        var maximum = Math.floor(2147483647 / end) * end; // regenerate if outside this
+        // empirical testing (Chrome 22) shows randomWords returning numbers approximately
+        // within the range (-1000000000, 1000000000)
+        var maximum = Math.floor(1000000000 / end) * end; // regenerate if outside this
         var restrictRange = function(x){
             x = Math.abs(x);
             if(x >= maximum){ // the (even more) naive approach would skew distribution
-                return restrictRange(sjcl.random.randomWords(num));
+                return restrictRange(sjcl.random.randomWords(1)[0]);
             }
             return x % end;
         };
@@ -120,7 +123,7 @@ keybearer = {
                     setTimeout(function(){
                         keybearer._keys[idx] = keybearer.makeKeyFromPassword(combinations[idx]);
                         callback(keybearer._keys.length / combinations.length);
-                    }, 50);
+                    }, 1);
                     var next = makeKeyBuilder(idx + 1);
                     next();
                 };
@@ -128,7 +131,7 @@ keybearer = {
                 return function(){};
             }
         };
-        callback(0);
+        callback(0); // update with 0 progress
         var keyBuilder = makeKeyBuilder(0);
         keyBuilder();
         return this._keys;
@@ -152,9 +155,45 @@ keybearer = {
                   v: 1,
                   ct: null,
                   fn: this._filename,
+                  ft: this._filetype,
                   nkeys: this._nPasswords,
                   nunlock: this._nToUnlock
                 };
+    },
+
+    // Decrypt the keys until the master is found
+    decryptKeys: function(){
+        var success = false;
+        // currently, there should only be one key in this._keys
+        // in the future, this may change, and it's an array anyway
+        for(var i = 0; i < this._keys.length; i++){
+            var prp = new sjcl.cipher[this._cipherobj.cipher](this._keys[i]);
+            // do a linear search against every key that could hold the master key
+            for(var j = 0; j < this._cipherobj.keys.length; j++){
+                try {
+                    var keyiv = this._cipherobj.keys[j];
+                    this._master = sjcl.mode[this._cipherobj.mode].decrypt(prp,
+                                                                           keyiv.key,
+                                                                           keyiv.iv,
+                                                                           this._cipherobj.adata,
+                                                                           this._cipherobj.ts);
+                    success = true;
+                } catch(err) {
+                    // this wasn't it. keep going until we get a match
+                }
+            }
+        }
+        return success;
+    },
+
+    // Decrypt the ciphertext from _cipherobject and store in _plaintext
+    decryptCiphertext: function(){
+        var prp = new sjcl.cipher[this._cipherobj.cipher](this._master);
+        this._plaintext = sjcl.mode[this._cipherobj.mode].decrypt(prp,
+                                                                  this._cipherobj.ct,
+                                                                  this._cipherobj.iv,
+                                                                  this._cipherobj.adata,
+                                                                  this._cipherobj.ts);
     },
 
     // Encrypt the plaintext
@@ -184,14 +223,9 @@ keybearer = {
                                                   iv,
                                                   '',
                                                   obj.ts);
-            encKeys.push({"iv": sjcl.codec.base64.fromBits(iv),
-                          "key": sjcl.codec.base64.fromBits(key)});
+            encKeys.push({"iv": iv, "key": key});
         }
         obj.keys = encKeys;
-        // base64 encode output
-        obj.salt = sjcl.codec.base64.fromBits(obj.salt);
-        obj.iv = sjcl.codec.base64.fromBits(obj.iv);
-        obj.ct = sjcl.codec.base64.fromBits(obj.ct);
     },
 
     // Turn metadata into relevant metadata + secret data
@@ -206,12 +240,38 @@ keybearer = {
 
     // Set our binary file contents
     setPlaintext: function(data){
-        this._plaintext = sjcl.codec.bytes.toBits(data);
+        var view = new Uint8Array(data, 0, 100);
+        this._plaintext = sjcl.codec.bitarrays.toBits(data);
     },
 
-    // Set our unencrypted secret
+    // Set unencrypted filename
     setFileName: function(fname){
         this._filename = fname;
+    },
+
+    // Set unencrypted file MIME type
+    setFileType: function(ftype){
+        this._filetype = ftype;
+    },
+
+    // Get unencrypted filename
+    getFileName: function(){
+        return this._filename;
+    },
+
+    // Get unencrypted file MIME type
+    getFileType: function(){
+        return this._filetype;
+    },
+
+    // Get number of passwords possible
+    getNPasswords: function(){
+        return this._nPasswords;
+    },
+
+    // Get number of passwords needed
+    getNumToUnlock: function(){
+        return this._nToUnlock;
     },
 
     // Reset generated keys
@@ -224,14 +284,51 @@ keybearer = {
         return(this._plaintext !== null);
     },
 
+    // checks if encrypted data has been loaded
+    isCipherObjectReady: function(){
+        return(this._cipherobj !== null);
+    },
+
     // parses data into our encrypted object
-    convertDataToJSON: function(data){
-        this._cipherobj = JSON.parse(data);
+    setCipherJSON: function(data){
+        var obj = JSON.parse(data);
+        // base64 -> bitArray all necessary base64-encoded fields
+        obj.salt = sjcl.codec.base64.toBits(obj.salt);
+        obj.iv = sjcl.codec.base64.toBits(obj.iv);
+        obj.ct = sjcl.codec.base64.toBits(obj.ct);
+        for(var i = 0; i < obj.keys.length; i++){
+            obj.keys[i].iv = sjcl.codec.base64.toBits(obj.keys[i].iv);
+            obj.keys[i].key = sjcl.codec.base64.toBits(obj.keys[i].key);
+        }
+        // set keybearer fields from JSON
+        // if I structured this nicer, this could be automatic
+        this._salt = obj.salt;
+        this._nPasswords = obj.nkeys;
+        this._nToUnlock = obj.nunlock;
+        this.setFileName(obj.fn); // set filename from JSON
+        this.setFileType(obj.ft); // set filetype from JSON
+
+        this._cipherobj = obj;
     },
 
     // Get the cipherobject
     getCipherJSON: function(){
-        return JSON.stringify(this._cipherobj);
+        // copy the object -- this is fairly gross
+        var obj = JSON.parse(JSON.stringify(this._cipherobj));
+        // base64 encode output
+        for(var i = 0; i < obj.keys.length; i++){
+            obj.keys[i].iv = sjcl.codec.base64.fromBits(obj.keys[i].iv);
+            obj.keys[i].key = sjcl.codec.base64.fromBits(obj.keys[i].key);
+        }
+        obj.salt = sjcl.codec.base64.fromBits(obj.salt);
+        obj.iv = sjcl.codec.base64.fromBits(obj.iv);
+        obj.ct = sjcl.codec.base64.fromBits(obj.ct);
+        return JSON.stringify(obj);
+    },
+
+    // Get the plaintext converted to a bytearray
+    getPlaintext: function(){
+        return sjcl.codec.bitarrays.fromBits(this._plaintext);
     }
 
 };
@@ -252,6 +349,40 @@ sjcl.codec.bytes = {
   },
   /** Convert from an array of bytes to a bitArray. */
   toBits: function (bytes) {
+    var out = [], i, tmp=0;
+    for (i=0; i<bytes.length; i++) {
+      tmp = tmp << 8 | bytes[i];
+      if ((i&3) === 3) {
+        out.push(tmp);
+        tmp = 0;
+      }
+    }
+    if (i&3) {
+      out.push(sjcl.bitArray.partial(8*(i&3), tmp));
+    }
+    return out;
+  }
+};
+
+/** @namespace Arrays of bytes */
+sjcl.codec.bitarrays = {
+  /** Convert from a bitArray to an ArrayBuffer of uint8 bytes */
+  fromBits: function (arr) {
+    var bl = sjcl.bitArray.bitLength(arr), i, tmp;
+    var ab = new ArrayBuffer(bl/8);
+    var out = new Uint8Array(ab);
+    for (i=0; i<bl/8; i++) {
+      if ((i&3) === 0) {
+        tmp = arr[i/4];
+      }
+      out[i] = (tmp >>> 24);
+      tmp <<= 8;
+    }
+    return out;
+  },
+  /** Convert from an ArrayBuffer of bytes to a bitArray. */
+  toBits: function (ab) {
+    var bytes = new Uint8Array(ab);
     var out = [], i, tmp=0;
     for (i=0; i<bytes.length; i++) {
       tmp = tmp << 8 | bytes[i];

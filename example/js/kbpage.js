@@ -120,20 +120,6 @@ kbp = {
         return passwords;
     },
 
-    // shuffle an array in-place using Fisher-Yates
-    fisherYates: function(arr) {
-        var i = arr.length;
-        if (i === 0) return false;
-        while (--i) {
-            var j = keybearer.randto(i + 1, 1);
-            var tempi = arr[i];
-            var tempj = arr[j];
-            arr[i] = tempj;
-            arr[j] = tempi;
-        }
-        return arr;
-    },
-
     // Get all entered passwords, and return M that have been filled out
     getMDecPass: function(n, m){
         var passwords = [];
@@ -144,7 +130,7 @@ kbp = {
         }
         if(passwords.length < m)
             alert("You must enter at least " + m + " passcodes to decrypt this message.");
-        kbp.fisherYates(passwords); // shuffle the order
+        keybearer.shuffle(passwords); // shuffle the order
         passwords = passwords.slice(0, m);
         passwords.sort();
         return passwords;
@@ -183,10 +169,10 @@ kbp = {
 
     // Friend form template
     ffTemplate: [
-        '<div class="pass">',
-        '<div id="reset_passX" class="btn">Regenerate</div>',
+        '<form class="pass form-inline">',
+        '<button id="reset_passX" class="btn">Regenerate</button>',
         '<input type="text" class="password" id="passX" value="PASSWORD" />',
-        '</div>'
+        '</form>'
         ].join('\n'),
 
     // Decryption entry template

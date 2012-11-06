@@ -226,6 +226,21 @@ keybearer = {
             encKeys.push({"iv": iv, "key": key});
         }
         obj.keys = encKeys;
+        this.shuffle(obj.keys); // shuffle the keys
+    },
+
+    // shuffle an array in-place using Fisher-Yates
+    shuffle: function(arr) {
+        var i = arr.length;
+        if (i === 0) return false;
+        while (--i) {
+            var j = keybearer.randto(i + 1, 1);
+            var tempi = arr[i];
+            var tempj = arr[j];
+            arr[i] = tempj;
+            arr[j] = tempi;
+        }
+        return arr;
     },
 
     // Turn metadata into relevant metadata + secret data

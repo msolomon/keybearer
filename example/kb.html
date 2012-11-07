@@ -4,7 +4,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Keybearer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="css/bootstrap.min.css" rel="stylesheet" media="screen" type="text/css"/>
+<link href="css/bootstrap-responsive.min.css" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="css/kbpage.css"/>
 <script type="text/javascript" src="../sjcl/sjcl.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"/></script>
@@ -14,102 +16,135 @@
 </head>
 
 <body onload="kbp.init('wordlists/wordlist.txt', 'wordlists/badngramlist.txt');">
-<h1>Keybearer</h1>
+<div class="header">
+    <h1 class="brand">Keybearer</h1>
+</div>
 
-<div id="encryptsection">
+<a href="http://github.com/msolomon/keybearer">
+<img id="ghbanner" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub">
+</a>
 
-    <h2>Encrypt</h2>
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="span6 mainarea well">
+            <div id="encryptsection">
 
-    <p id="entropy_msg">Please move the mouse to seed the random number generator:</p>
+                <h2 class="btn-info">Encrypt</h2>
 
-    <p id="entropy_frac">0.0</p>
-    <label>Friend key length:
-        <select id="pass_len">
-            <option value="6" selected="selected">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-        </select>
-    </label>
+                <div id="entropy_msg" class="alert alert-info">
+                    <p>Please move the mouse to seed the random number generator:</p>
+                    <div class="progress">
+                        <div id="entropy_progressbar" class="bar" style="width:0%;">
+                            <span id="entropy_frac"></span>
+                        </div>
+                    </div>
+                </div>
 
-    <label>Number of friends:
-        <select id="num_pass">
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5" selected="selected">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-        </select>
-    </label>
+                <div class="form-horizontal">
+                    <div class="control-group">
+                        <span class="control-label">Number of friends:</span>
+                        <div class="controls">
+                            <div class="btn-group" id="num_pass" data-toggle="buttons-radio">
+                                <button id="n1" class="btn" value="1">1</button>
+                                <button id="n2" class="btn" value="2">2</button>
+                                <button id="n3" class="btn" value="3">3</button>
+                                <button id="n4" class="btn" value="4">4</button>
+                                <button id="n5" class="btn active" value="5">5</button>
+                                <button id="n6" class="btn" value="6">6</button>
+                                <button id="n7" class="btn" value="7">7</button>
+                                <button id="n8" class="btn" value="8">8</button>
+                                <button id="n9" class="btn" value="9">9</button>
+                                <button id="n10" class="btn" value="10">10</button>
+                            </div>
+                        </div>
+                    </div>
 
-    <label>Friends needed to unlock:
-        <select id="num_unlock_pass">
-            <option value="3" selected="selected">3</option>
-        </select>
-    </label>
-    <span>Keys to be generated:</span>
-    <span id="nkeys_to_gen">10</span>
+                    <div class="control-group">
+                        <span class="control-label">Friends needed to unlock:</span>
+                        <div class="controls">
+                            <div class="btn-group" id="num_unlock_pass" data-toggle="buttons-radio">
+                                <button id="m3" class="btn active" value=3>3</button>
+                            </div>
+                        </div>
+                    </div>
 
-    <div id="generated_pass">
+                    <div class="control-group">
+                        <span class="control-label">Key combinations to be generated:</span>
+                        <div class="controls">
+                            <a class="btn disabled" id="nkeys_to_gen">10</a>
+                        </div>
+                    </div>
+
+                    <h3>Passcode Generation</h3>
+                    <div class="alert alert-info">
+                        You may use automatically generated passcodes, or insert your own
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label">Friend key length:</span>
+                        <div class="controls">
+                            <div class="btn-group" id="pass_len" data-toggle="buttons-radio">
+                                <button id="l6" class="btn active" value="6">6</button>
+                                <button id="l7" class="btn" value="7">7</button>
+                                <button id="l8" class="btn" value="8">8</button>
+                                <button id="l9" class="btn" value="9">9</button>
+                                <button id="l10" class="btn" value="10">10</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div id="generated_pass"></div>
+            </div>
+            
+            <h3>File Selection</h3>
+            <div>
+                <div class="alert">
+                    <strong>Notice:</strong> The file name and type will be stored in unauthenticated plain text
+                </div>
+                <form class="form-inline">
+                    <label class="btn">
+                        Select file to encrypt
+                        <input class="hide" type="file" id="secretfile" name="file"/>
+                    </label>
+                    <span id="secretfilename">No file selected</span>
+                </form>
+            </div>
+
+            <form id="keygensection" class="form-inline">
+                <div class="btn" id="encrypt">Encrypt</div>
+                <div id="encdownloadlink"></div>
+            </form>
+        </div>
+
+
+        <div class="span6 mainarea well">
+
+            <div id="decryptsection">
+                <h2 class="btn-primary">Decrypt</h2>
+                <h3>File Selection</h3>
+                <form class="form-inline">
+                    <label class="btn">
+                        Select file to decrypt
+                        <input class="hide" type="file" id="decfile" name="file" />
+                    </label>
+                    <span id="decfilename">No file selected</span>
+                </form>
+
+                <div id="decpass_area">
+                    <span id="decfileprogress"></span>
+                </div>
+                <span id="decfileprogress">
+                    <div class="btn" id="decrypt">Decrypt</div>
+
+                    <div id="decdownloadlink"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div>
-    <p>This filename will be stored in unauthenticated plain text</p>
-    <label class="btn">
-        Select file
-        <input class="hide" type="file" id="secretfile" name="file"/>
-    </label>
-    <span id="secretfilename"></span>
-    <span id="secretfileprogress"></span>
-</div>
-
-<div>
-    <div id="keygensection">
-        <div class="btn" id="encrypt">Encrypt</div>
-        <label>Key generation:
-            <span id="keygenprogress">0%</span>
-        </label>
-        <label>Data encryption:
-            <span id="encryptionprogress">0%</span>
-        </label>
-
-        <div id="encdownloadlink"></div>
-    </div>
-</div>
-
-<h2>Decrypt</h2>
-
-<div id="decryptsection">
-    <div>
-        <p>Select a file to decrypt</p>
-        <label class="btn">
-            Select file
-            <input class="hide" type="file" id="decfile" name="file" />
-        </label>
-        <span id="decfilename"></span>
-        <span id="decfileprogress"></span>
-    </div>
-
-    <div id="decpass_area">
-        <span id="decfileprogress"></span>
-    </div>
-    <span id="decfileprogress">
-        <div class="btn" id="decrypt">Decrypt</div>
-        <label>Key checking:
-            <span id="keycheckprogress">0%</span>
-        </label>
-        <label>Data decryption:
-            <span id="decryptionprogress">0%</span>
-        </label>
-
-        <div id="decdownloadlink"></div>
-    </div>
-    </body>
-    </html>
+<script>$('.nav-tabs').button();</script>
+</body>
+</html>
 

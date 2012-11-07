@@ -7,12 +7,12 @@ kbp = {
     // Prepare keybearer
     init: function(wordlistURL, badngramlistURL) {
         sjcl.random.setDefaultParanoia(10);
-        sjcl.random.addEventListener('progress', function(){
-            $('#entropy_frac').text(sjcl.random.getProgress());
+        sjcl.random.addEventListener('progress', function(pct){
+            $('#entropy_frac').text(kbp.toPercent(pct));
+            $('#entropy_progressbar').width(pct * 100 + "%");
         });
         var ent_ready = function(){
             $('#entropy_msg').remove();
-            $('#entropy_frac').remove();
             // generate salt
             keybearer.makeSalt();
             kbp._ready_entropy = true;
@@ -44,30 +44,37 @@ kbp = {
 
     // Bind input change events
     bind_input: function() {
-      $('#num_pass').change(kbp.generateAllFriendPass);
-      $('#num_pass').change(kbp.checkUnlockPass);
-      $('#num_pass').change(kbp.updateKeygenCount);
-      $('#num_unlock_pass').change(kbp.updateKeygenCount);
-      $('#pass_len').change(kbp.generateAllFriendPass);
-      $('#num_pass').change();
+      $('#num_pass > .btn').click(kbp.generateAllFriendPass);
+      $('#num_pass > .btn').click(kbp.checkUnlockPass);
+      $('#num_pass > .btn').click(kbp.updateKeygenCount);
+      $('#num_unlock_pass > .btn').click(kbp.updateKeygenCount);
+      $('#pass_len > .btn').click(kbp.generateAllFriendPass);
       $('#encrypt').click(kbp.encrypt);
       $('#decrypt').click(kbp.decrypt);
       $('#secretfile').change(kbp.choosePlaintextFile);
       $('#decfile').change(kbp.chooseEncryptedFile);
+      $('#num_pass > .active').click();
     },
 
     // Event handler for changing number of friends
-    generateAllFriendPass: function() {
+    generateAllFriendPass: function(evt) {
         var gk = $('#generated_pass');
         gk.empty();
-        var n_keys = $('#num_pass option:selected').val();
+        var n_keys, p_len;
+        if(evt.target.id.match(/l/)){ // length event generated change
+            p_len = evt.target.value;
+            n_keys = kbp.getNumPass();
+        } else {
+            n_keys = evt.target.value;
+            p_len = $('#pass_len > .active').val();
+        }
         var reset = function(ev) {
-           $('#' + ev.currentTarget.id.replace('reset_', '')).
-            val(keybearer.makePassword($('#pass_len').val()));
+            var s = '#' + ev.currentTarget.id.replace('reset_', '');
+            $(s).val(keybearer.makePassword(p_len));
             keybearer.resetKeys();
         };
         for(var i = 0; i < n_keys; i++){
-            gk.append(kbp.mkFriendPass(i, keybearer.makePassword($('#pass_len').val())));
+            gk.append(kbp.mkFriendPass(i, keybearer.makePassword(p_len)));
             $('#reset_pass' + i).click(reset);
       }
     },
@@ -76,39 +83,39 @@ kbp = {
     generateAllDecPass: function(n, m) {
         var da = $('#decpass_area');
         da.empty();
-        da.append(["<p>Enter up to",
+        da.append(['<div class="alert alert-info">',
+                   'Enter up to',
                    n,
-                   "passcodes, including spaces. Only",
+                   'passcodes, including spaces. Only',
                    m,
-                   "passcodes are necessary."].join(' '));
-        da.append('<ol id="declist"></ol>');
-        var l = $('#declist');
+                   'passcodes are necessary.',
+                   '</div>'].join(' '));
         for(var i = 0; i < n; i++){
-            l.append(kbp.mkDecPass(i));
+            da.append(kbp.mkDecPass(i));
         }
     },
 
     // Ensure more friends aren't needed to unlock than exist
-    checkUnlockPass: function (){
-        var max_sel = kbp.getNumPass();
-        var sel = Math.min(max_sel,
-                           $('#num_unlock_pass option:selected').val());
+    checkUnlockPass: function (evt){
+        var max_sel = evt.target.value;
+        var sel = Math.min(max_sel, kbp.getNumUnlock());
         // always rebuild the list. simple special cases could avoid this
         var nuk = $('#num_unlock_pass');
         nuk.empty();
         for(var i = 1; i <= max_sel; i++){
-            nuk.append('<option value=I>I</option>'.
-                    replace('=I', '=I' + (i == sel ? ' selected' : '')).
+            nuk.append('<button id="mI" class="btn" value=I>I</button>'.
+                    replace('btn', 'btn' + (i == sel ? ' active' : '')).
                     replace(/I/g, i));
         }
+        $('#num_unlock_pass > .btn').click(kbp.updateKeygenCount);
     },
 
     getNumPass: function(){
-       return $('#num_pass option:selected').val();
+       return $('#num_pass > .active').val();
     },
 
     getNumUnlock: function(){
-       return $('#num_unlock_pass option:selected').val();
+       return $('#num_unlock_pass > .active').val();
     },
 
     getAllPass: function(){
@@ -124,15 +131,27 @@ kbp = {
     getMDecPass: function(n, m){
         var passwords = [];
         for(var i = 0; i < n; i++){
+            $('#label' + i).attr('class', 'add-on');
             var s = keybearer.normalizeString($('#decpass' + i).val());
             if(s.length > 0) // omit empty passwords
                 passwords.push(s);
         }
-        if(passwords.length < m)
+        if(passwords.length < m){
             alert("You must enter at least " + m + " passcodes to decrypt this message.");
+            return passwords;
+        }
         keybearer.shuffle(passwords); // shuffle the order
         passwords = passwords.slice(0, m);
         passwords.sort();
+        // highlight the winning keys. this should really be in a different function
+        for(i = 0; i < n; i++){
+            var str = keybearer.normalizeString($('#decpass' + i).val());
+            for(var j = 0; j < m; j++){
+                if(str == passwords[j]){
+                    $('#label' + i).addClass('btn-info');
+                }
+            }
+        }
         return passwords;
     },
 
@@ -143,56 +162,61 @@ kbp = {
             return;
         }
         var passwords = kbp.getAllPass();
-        var encrypt_pt = function(){
-            keybearer.makeAESKey();
-            keybearer.encryptPlaintext();
-        };
-        keybearer.makeKeyCombinations(passwords, kbp.getNumUnlock(), function(pcnt){
-            $('#keygenprogress').text(kbp.toPercent(pcnt));
-            if(pcnt === 1){
-                encrypt_pt();
-                $('#encryptionprogress').text(kbp.toPercent(1));
-                var blob = new Blob([keybearer.getCipherJSON()], {type: 'application/json'});
-                var link = document.createElement('a');
-                window.URL = window.URL || window.webkitURL;
-                link.href = window.URL.createObjectURL(blob);
-                link.download = keybearer.getFileName() + '.keybearer.json';
-                link.innerHTML = 'Download encrypted JSON';
-                $('#encdownloadlink').empty().append(link);
-            }
-        });
+        keybearer.makeKeyCombinations(passwords, kbp.getNumUnlock());
+        keybearer.makeAESKey();
+        keybearer.encryptPlaintext();
+        var blob = new Blob([keybearer.getCipherJSON()], {type: 'application/json'});
+        var link = document.createElement('a');
+        window.URL = window.URL || window.webkitURL;
+        link.href = window.URL.createObjectURL(blob);
+        link.download = keybearer.getFileName() + '.kbr.json';
+        link.innerHTML = 'Download encrypted' + link.download;
+        window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
+        $('#encdownloadlink').empty().append(link);
     },
 
-    updateKeygenCount: function(){
-        $('#nkeys_to_gen').text(kbp.nChooseK(kbp.getNumPass(), kbp.getNumUnlock()));
+    updateKeygenCount: function(evt){
+        var n, m;
+        if(evt.target.id.match(/n/)){ // numpass changed
+            n = evt.target.value;
+            m = kbp.getNumUnlock();
+        } else {
+            n = kbp.getNumPass();
+            m = evt.target.value;
+        }
+        $('#nkeys_to_gen').text(kbp.nChooseK(n, m));
     },
 
     // Friend form template
     ffTemplate: [
-        '<form class="pass form-inline">',
-        '<button id="reset_passX" class="btn">Regenerate</button>',
-        '<input type="text" class="password" id="passX" value="PASSWORD" />',
+        '<form class="pass form-inline input-prepend input-append">',
+        '<input id="reset_passX" class="btn" type="button" value="Regenerate"></input>',
+        '<input type="text" class="password regen" id="passX" value="PASSWORD" />',
+        '<span class="add-on">X+1</span>',
         '</form>'
         ].join('\n'),
 
     // Decryption entry template
     decTemplate: [
-        '<li class="decpass">',
-        '<input type="text" class="decpassinput" id="decpassX" value="" />',
-        '</li>'
+        '<form class="decpass pass form-inline input-prepend">',
+        '<span id="labelX" class="add-on">X+1</span>',
+        '<input type="text" class="decpassinput decpassin" id="decpassX" value="" />',
+        '</form>'
         ].join('\n'),
 
     // Fill in form template
     mkFriendPass: function(friendID, password){
         return kbp.ffTemplate.
-            replace(/passX/g, 'pass' + friendID).
+            replace(/X\+1/g, friendID + 1).
+            replace(/X/g, friendID).
             replace('PASSWORD', password);
     },
 
     // Fill in decryption entry template
     mkDecPass: function(friendID){
         return kbp.decTemplate.
-            replace(/decpassX/g, 'decpass' + friendID);
+            replace(/X\+1/g, friendID + 1).
+            replace(/X/g, friendID);
     },
 
     // n choose k (to show # keys generated)
@@ -209,7 +233,7 @@ kbp = {
 
     // "upload" (read) a plaintext file in JS using HTML5 features
     choosePlaintextFile:  function(evt){
-        $('#secretfilename').text($('#secretfile').val());
+        $('#secretfilename').text($('#secretfile').val() || 'No file selected');
         var file = evt.target.files[0];
         if(!file) return; // no file selected
         var reader = new FileReader();
@@ -219,15 +243,12 @@ kbp = {
             keybearer.setFileName(file.name);
             keybearer.setFileType(file.type); // store MIME time
         };
-        reader.onprogress = function(evt){
-            $('#secretfileprogress').text(kbp.toPercent(evt.loaded/evt.total));
-        };
         reader.readAsArrayBuffer(file);
     },
 
     // "upload" (read) an encrypted file in JS using HTML5 features
     chooseEncryptedFile:  function(evt){
-        $('#decfilename').text($('#decfile').val());
+        $('#decfilename').text($('#decfile').val() || 'No file selected');
         var file = evt.target.files[0];
         if(!file) return; // no file selected
         var reader = new FileReader();
@@ -235,7 +256,6 @@ kbp = {
         reader.onload = function(evt){
             try {
                 keybearer.setCipherJSON(evt.target.result);
-                $('#decfileprogress').text('Success!');
                 var n = keybearer.getNPasswords();
                 var m = keybearer.getNumToUnlock();
                 kbp.generateAllDecPass(n, m);
@@ -243,9 +263,6 @@ kbp = {
                 alert("Error loading keybearer file:\n" + err);
                 $('#decfileprogress').text('Error');
             }
-        };
-        reader.onprogress = function(evt){
-            $('#decfileprogress').text(kbp.toPercent(evt.loaded/evt.total));
         };
         reader.readAsBinaryString(file);
     },
@@ -256,14 +273,17 @@ kbp = {
             alert("You must load a file before before decrypting it!");
             return;
         }
-        var decrypt = function(){
+        try {
+            var n = keybearer.getNPasswordsDecrypt();
+            var m = keybearer.getNumToUnlock();
+            var passwords = kbp.getMDecPass(n, m);
+            keybearer.makeKeyCombinations(passwords, m);
             var gotKey = keybearer.decryptKeys();
             if(!gotKey){
-                alert('Could not decode key. Check your passcodes');
+                alert('Could not decode key, check the passcodes');
                 return;
             }
             keybearer.decryptCiphertext();
-            $('#decryptionprogress').text(kbp.toPercent(1));
             var blob = new Blob([keybearer.getPlaintext()],
                                 {type: keybearer.getFileType()});
             var link = document.createElement('a');
@@ -271,18 +291,8 @@ kbp = {
             link.href = window.URL.createObjectURL(blob);
             link.download = keybearer.getFileName();
             link.innerHTML = 'Download decrypted ' + link.download;
+            window.URL.revokeObjectURL($('#decdownloadlink > a').attr('href'));
             $('#decdownloadlink').empty().append(link);
-        };
-        try {
-            var n = keybearer.getNPasswords();
-            var m = keybearer.getNumToUnlock();
-            var passwords = kbp.getMDecPass(n, m);
-            keybearer.makeKeyCombinations(passwords, m, function(frac){
-                $('#keycheckprogress').text(kbp.toPercent(frac));
-                if(frac === 1){ // done making decryption key (there is only one)
-                    decrypt();
-                }
-            });
         } catch(err){
             alert("Error decrypting keybearer file:\n" + err);
              throw err;

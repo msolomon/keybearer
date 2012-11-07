@@ -37,9 +37,9 @@ keybearer = {
     },
 
     // Generate a password from wordlist using given # of words
-    makePassword: function(length, paranoia) {
+    makePassword: function(length) {
         var pwd = [];
-        var selections = this.randto(this._wordlist.length, length, paranoia);
+        var selections = this.randto(this._wordlist.length, length);
         for(var i = 0; i < length; i++){
             pwd[i] = this._wordlist[selections[i]];
         }
@@ -47,7 +47,7 @@ keybearer = {
         var joined = pwd.join(' ');
         for(i = 0; i < this._badngramlist.length; i++){
             if(joined.indexOf(this._badngramlist[i]) !== -1){
-                return this.makePassword(length, paranoia);
+                return this.makePassword(length);
             }
         }
         return joined;
@@ -111,29 +111,13 @@ keybearer = {
         return combined;
     },
 
-    // Generate all key combinations (with progress callback)
-    makeKeyCombinations: function(passwords, nToUnlock, callback){
-        callback = callback || function(x){};
+    // Generate all key combinations
+    makeKeyCombinations: function(passwords, nToUnlock){
         this._keys = [];
         var combinations = this.makeCombinedPasswords(passwords, nToUnlock);
-        // build a function chain using setTimeout so we don't TOTALLY lock up the browser
-        var makeKeyBuilder = function(idx){
-            if(idx < combinations.length){
-                return function(){
-                    setTimeout(function(){
-                        keybearer._keys[idx] = keybearer.makeKeyFromPassword(combinations[idx]);
-                        callback(keybearer._keys.length / combinations.length);
-                    }, 1);
-                    var next = makeKeyBuilder(idx + 1);
-                    next();
-                };
-            } else {
-                return function(){};
-            }
-        };
-        callback(0); // update with 0 progress
-        var keyBuilder = makeKeyBuilder(0);
-        keyBuilder();
+        for(var i = 0; i < combinations.length; i++){
+            keybearer._keys.push(keybearer.makeKeyFromPassword(combinations[i]));
+        }
         return this._keys;
     },
 
@@ -282,6 +266,11 @@ keybearer = {
     // Get number of passwords possible
     getNPasswords: function(){
         return this._nPasswords;
+    },
+
+    // Get number of passwords possible for decryption
+    getNPasswordsDecrypt: function(){
+        return this._cipherobj.nkeys;
     },
 
     // Get number of passwords needed

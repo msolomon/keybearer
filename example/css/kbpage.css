@@ -1,16 +1,98 @@
 
-.password {
-    width: 800px;
+body {
+    background-image: url(../img/large_leather.png);
+    background-repeat: repeat;
+}
+
+.header {
+    background-image: url(../img/topbarbg.png);
+    background-repeat: repeat;
+}
+
+.brand {
+    text-align: center;
+    color: #fcf3ff;
+    line-height: 64px;
+    margin-top: 0;
 }
 
 li.decpass {
-    margin-left: 50px;
-}
-
-input.decpassinput {
-    width: 800px;
+    list-style-type: none;
 }
 
 .hide {
     display: none;
+}
+
+span.control-label {
+    font-weight: bold;
+}
+
+#nkeys_to_gen {
+    color: black;
+    font-weight: bold;
+}
+
+h2 {
+    text-align: center;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+
+[class*="span"], .row-fluid [class*="span"]{
+display:inline-block;
+    vertical-align:top;  
+}
+
+#ghbanner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: 0;
+}
+
+#encdownloadlink, #decdownloadlink {
+    display: inline-block;
+}
+.mainarea {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-group {
+    white-space: normal;
+}
+
+@media (max-width: 767px){ 
+    .input-prepend input.regen{
+        width: -webkit-calc(100% - 139px);
+        width: -moz-calc(100% - 139px);
+        width: calc(100% - 139px);
+    }
+}
+
+.regen {
+    width: -webkit-calc(100% - 139px);
+    width: -moz-calc(100% - 139px);
+    width: calc(100% - 139px);
+}
+
+@media (max-width: 767px){ 
+    .input-prepend input.decpassin{
+        width: -webkit-calc(100% - 39px);
+        width: -moz-calc(100% - 39px);
+        width: calc(100% - 39px);
+    }
+}
+
+.decpassin {
+    width: -webkit-calc(100% - 39px);
+    width: -moz-calc(100% - 39px);
+    width: calc(100% - 39px);
+}
+
+@media (max-width: 767px) {
+    body {
+        padding: 0;
+    }
 }

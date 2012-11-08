@@ -6,6 +6,15 @@ kbp = {
 
     // Prepare keybearer
     init: function(wordlistURL, badngramlistURL) {
+        try {
+            new Blob();
+        } catch(err){
+            $('#error').append(['<div class="alert alert-error">',
+                                    '<h3>This browser does not support the FileAPI,',
+                                    'which is required.',
+                                    'Consider trying again with the latest Firefox or Chrome.',
+                                    '</h3></div>'].join('\n'));
+        }
         sjcl.random.setDefaultParanoia(10);
         sjcl.random.addEventListener('progress', function(pct){
             $('#entropy_frac').text(kbp.toPercent(pct));
@@ -54,6 +63,7 @@ kbp = {
       $('#secretfile').change(kbp.choosePlaintextFile);
       $('#decfile').change(kbp.chooseEncryptedFile);
       $('#num_pass > .active').click();
+      $('#copypass').click(kbp.copyPasswords);
     },
 
     // Event handler for changing number of friends
@@ -301,6 +311,33 @@ kbp = {
 
     toPercent: function(fraction){
         return Math.round(fraction * 100) + '%';
+    },
+
+    copyPasswords: function(){
+        var passwords = kbp.getAllPass();
+        for(var i = 0; i < passwords.length; i++){
+            passwords[i] = keybearer.normalizeString(passwords[i]);
+        }
+        $('#modalbody').html(passwords.join('<br>'));
+        // highlight after animation completes
+        setTimeout(function(){kbp.selectText('modalbody');}, 500);
+    },
+
+    selectText: function(element) {
+        var doc = document;
+        var text = doc.getElementById(element);
+        var range, selection;
+        if (doc.body.createTextRange) { //ms
+            range = doc.body.createTextRange();
+            range.moveToElementText(text);
+            range.select();
+        } else if (window.getSelection) { //all others
+            selection = window.getSelection();
+            range = doc.createRange();
+            range.selectNodeContents(text);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
     }
 
 };

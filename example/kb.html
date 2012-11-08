@@ -24,6 +24,8 @@
 <img id="ghbanner" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub">
 </a>
 
+<div id="error"></div>
+
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="span6 mainarea well">
@@ -92,11 +94,26 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
+
                 <div id="generated_pass"></div>
+
+                <a href="#passmodal" id="copypass" role="button" class="btn" data-toggle="modal">Copyable passwords</a>
+                <div id="passmodal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h3 id="myModalLabel">Copyable passwords</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p id="modalbody"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="pull-left">Press Ctrl+c or &#8984;+c to copy</div>
+                        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+                    </div>
+                </div>
             </div>
-            
+
             <h3>File Selection</h3>
             <div>
                 <div class="alert">

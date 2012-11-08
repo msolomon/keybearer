@@ -3,7 +3,7 @@ keybearer = {
     salt_length: 4, // in words (bytes * 4)
     aes_key_strength: 8, // 4 = 128 bits, 6 = 192, 8 = 256
     aes_cipher_mode: 'ccm', // ccm or ocb2 -- ccm seems to be MUCH faster
-    pbkdf2_iterations: 50, // number of key stretching iterations
+    pbkdf2_iterations: 50000, // number of key stretching iterations
 
     _badngramlist: [],
     _salt: null,
@@ -18,6 +18,7 @@ keybearer = {
     _nToUnlock: null, // number of passwords needed to unlock
     _lastMetadata: null, // last used metadata object
     // Load the wordlist for password generation
+
     loadWordlist: function(url, field, callback) {
         var startTime = new Date();
         var endTime;

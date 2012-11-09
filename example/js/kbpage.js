@@ -49,7 +49,7 @@ kbp = {
     try_start: function(){
         if(kbp._ready_wordlist && kbp._ready_entropy && kbp._ready_ngram){
             // set up keybearer in a Web Worker
-            kbp.b = new Blob([[
+            kbp.b = new Blob([
                              'importScripts("' + window.location.href.toString().replace(/kb.html/, '../../sjcl/sjcl.js') + '");',
                              'importScripts("' + window.location.href.toString().replace(/kb.html/, '../../kb.js') + '");',
                              'sjcl.random.setDefaultParanoia(10);',
@@ -58,13 +58,13 @@ kbp = {
                              //'self.postMessage(d.data);',
                              'if(d.data.p){',
                              'var params = Array.prototype.slice.call(d.data.p);',
-                             'if(d.data.c){ params.push(function(pct){self.postMessage({f: d.data.f, c: pct})}) }',
-                             'var result = keybearer[d.data.f].apply(this, params)',
+                             'if(d.data.c){ params.push(function(pct){self.postMessage({f: d.data.f, c: pct})}) };',
+                             'var result = keybearer[d.data.f].apply(this, params);',
                              'if(result) self.postMessage({f: d.data.f, r: result});',
                              '} else {',
                              'var result = keybearer[d.data.f]();',
                              'if(result) self.postMessage({f: d.data.f, r: result});',
-                             '}}'].join('\n')
+                             '}}'
             ],
             {type: 'application/json'});
             window.URL = window.URL || window.webkitURL;
@@ -74,7 +74,6 @@ kbp = {
             kbp.kb.onmessage = function(e) {
                 var handler = e.data.f;
                 var result = e.data.r;
-                console.log(e);
                 switch(handler){
                     case 'setPlaintext':
                         $('#encrypt').attr('class', 'btn').click(kbp.encrypt);

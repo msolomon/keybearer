@@ -57,7 +57,9 @@ kbp = {
                              'self.onmessage = function(d){',
                              //'self.postMessage(d.data);',
                              'if(d.data.p){',
-                             'var result = keybearer[d.data.f].apply(this, Array.prototype.slice.call(d.data.p))',
+                             'var params = Array.prototype.slice.call(d.data.p);',
+                             'if(d.data.c){ params.push(function(pct){self.postMessage({f: d.data.f, c: pct})}) }',
+                             'var result = keybearer[d.data.f].apply(this, params)',
                              'if(result) self.postMessage({f: d.data.f, r: result});',
                              '} else {',
                              'var result = keybearer[d.data.f]();',
@@ -70,31 +72,30 @@ kbp = {
             kbp.kb = new Worker(blobURL);
 
             kbp.kb.onmessage = function(e) {
-                console.log(e);
                 var handler = e.data.f;
                 var result = e.data.r;
+                console.log(e);
                 switch(handler){
-                    case 'encrypt':
-                        if(e.data.r <= 1){ // it's a progress update
-                            $('#ksprogressbar').width(pct * 100 + '%');
-                            $('#ksprogressbar').html(kbp.toPercent(pct));
-                        } else {
-                        }
-                    break;
                     case 'setPlaintext':
                         $('#encrypt').attr('class', 'btn').click(kbp.encrypt);
                     break;
                     case 'encryptWithPasswords':
-                        var blob = new Blob([e.data], {type: 'application/json'});
+                        if(e.data.c){ // it's a progress update
+                            $('#ksprogressbar').width(e.data.c * 100 + '%');
+                            $('#ksprogressbar').html(kbp.toPercent(e.data.c));
+                            if(e.data.c == 1){ // done
+                                $('#encprogress').delay(1000).fadeOut(400);
+                            }
+                            break;
+                        }
+                        var blob = new Blob([result], {type: 'application/json'});
                         var link = document.createElement('a');
                         link.href = window.URL.createObjectURL(blob);
                         link.download = keybearer.getFileName() + '.kbr.json';
                         link.innerHTML = 'Download encrypted ' + link.download;
                         window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
-                        //$('#encprogress').appendClass('hide');
                         $('#encdownloadlink').empty().append(link);
                     break;
-
                 }
             };
             kbp.kb.postMessage({f: 'makeSalt'});
@@ -114,7 +115,6 @@ kbp = {
       $('#pbkdf2iterations > .btn').click(kbp.updatePBKDF2Iterations);
       $('#num_unlock_pass > .btn').click(kbp.updateKeygenCount);
       $('#pass_len > .btn').click(kbp.generateAllFriendPass);
-      $('#decrypt').click(kbp.decrypt);
       $('#secretfile').change(kbp.choosePlaintextFile);
       $('#decfile').change(kbp.chooseEncryptedFile);
       $('#num_pass > .active').click();
@@ -232,8 +232,8 @@ kbp = {
             $('#ksprogressbar').width(pct * 100 + '%');
             $('#ksprogressbar').html(kbp.toPercent(pct));
         };
-        $('#encprogress').attr('class', 'well');
-        kbp.kb.postMessage({f: 'encryptWithPasswords', p: [passwords, kbp.getNumUnlock()]});
+        $('#encprogress').animate({opacity: 1, display: 'toggle'});
+        kbp.kb.postMessage({f: 'encryptWithPasswords', p: [passwords, kbp.getNumUnlock()], c: true});
     },
 
     updateKeygenCount: function(evt){
@@ -301,14 +301,14 @@ kbp = {
         $('#secretfilename').text($('#secretfile').val() || 'No file selected');
         var file = evt.target.files[0];
         if(!file) return; // no file selected
+        $('#decfilename').html('No file selected');
+        $('#decrypt').unbind('click').addClass('disabled');
         var reader = new FileReader();
         // event handler for when secret file is loaded
         reader.onload = function(evt){
             keybearer.setFileName(file.name);
             keybearer.setFileType(file.type);
-            kbp.kb.postMessage({f: 'setPlaintext', p: [evt.target.result]});
-            kbp.kb.postMessage({f: 'setFileName', p: [file.name]});
-            kbp.kb.postMessage({f: 'setFileType', p: [file.type]}); // store MIME time
+            kbp.kb.postMessage({f: 'setPlaintext', p: [evt.target.result, file.name, file.type]});
         };
         keybearer.setPlaintext([]);
         reader.readAsArrayBuffer(file);
@@ -319,18 +319,23 @@ kbp = {
         $('#decfilename').text($('#decfile').val() || 'No file selected');
         var file = evt.target.files[0];
         if(!file) return; // no file selected
+        $('#secretfilename').html('No file selected');
+        $('#encrypt').unbind('click').addClass('disabled');
         var reader = new FileReader();
         // event handler for when secret file is loaded
         reader.onload = function(evt){
             try {
-                keybearer.setCipherJSON(evet.target.result);
-                kbp.kb.postMessage({f: 'setCipherJSON', p: [evt.target.result]});
+                keybearer.setCipherJSON(evt.target.result);
+                //kbp.kb.postMessage({f: 'setCipherJSON', p: [evt.target.result]});
+                keybearer.setCipherJSON(evt.target.result);
                 var n = keybearer.getNPasswords();
                 var m = keybearer.getNumToUnlock();
                 kbp.generateAllDecPass(n, m);
+                $('#decrypt').attr('class', 'btn').click(kbp.decrypt);
             } catch(err) {
                 alert("Error loading keybearer file:\n" + err);
                 $('#decfileprogress').text('Error');
+                throw(err);
             }
         };
         reader.readAsBinaryString(file);

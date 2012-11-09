@@ -252,19 +252,23 @@ keybearer = {
     },
 
     // Set our binary file contents
-    setPlaintext: function(data){
+    setPlaintext: function(data, fn, ft){
         this._plaintext = sjcl.codec.bitarrays.toBits(data);
+        if(fn) keybearer.setFileName(fn);
+        if(ft) keybearer.setFileType(ft);
         return true;
     },
 
     // Set unencrypted filename
     setFileName: function(fname){
         this._filename = fname;
+        return this._filename;
     },
 
     // Set unencrypted file MIME type
     setFileType: function(ftype){
         this._filetype = ftype;
+        return this._filetype;
     },
 
     // Set the number of PBKDF2 iterations

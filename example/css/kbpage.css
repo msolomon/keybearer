@@ -22,6 +22,7 @@ li.decpass {
 
 .hide {
     display: none;
+    opacity: 0;
 }
 
 span.control-label {

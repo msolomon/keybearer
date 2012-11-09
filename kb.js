@@ -112,13 +112,17 @@ keybearer = {
         return combined;
     },
 
-    // Generate all key combinations
-    makeKeyCombinations: function(passwords, nToUnlock){
+    // Generate all key combinations, with progress callback
+    makeKeyCombinations: function(passwords, nToUnlock, callback){
+        callback = callback || function(x){};
         this._keys = [];
         var combinations = this.makeCombinedPasswords(passwords, nToUnlock);
+        callback(0);
         for(var i = 0; i < combinations.length; i++){
             keybearer._keys.push(keybearer.makeKeyFromPassword(combinations[i]));
+            callback(i/combinations.length);
         }
+        callback(1);
         return this._keys;
     },
 
@@ -181,19 +185,28 @@ keybearer = {
                                                                   this._cipherobj.ts);
     },
 
+    // complete encryption process with callback
+    encryptWithPasswords: function(passwords, nUnlock, callback){
+        keybearer.makeKeyCombinations(passwords, nUnlock, callback);
+        keybearer.makeAESKey();
+        return keybearer.encryptPlaintext(this._plaintext);
+    },
+
     // Encrypt the plaintext
-    encryptPlaintext: function(){
+    encryptPlaintext: function(pt){
         var p = this.makeMetadataObject();
+        var ptxt = pt || this._plaintext;
         this._lastMetadata = p;
         var prp = new sjcl.cipher[p.cipher](this._master);
         p.ct = sjcl.mode[p.mode].encrypt(
                                         prp,
-                                        this._plaintext,
+                                        ptxt,
                                         p.iv,
                                         p.adata,
                                         p.ts);
         this._cipherobj = p;
         this.augmentWithEncryptedKeys(this._cipherobj);
+        return this.getCipherJSON();
     },
 
     // Add the master key, encrypted by every valid combination of passwords
@@ -240,8 +253,8 @@ keybearer = {
 
     // Set our binary file contents
     setPlaintext: function(data){
-        var view = new Uint8Array(data, 0, 100);
         this._plaintext = sjcl.codec.bitarrays.toBits(data);
+        return true;
     },
 
     // Set unencrypted filename
@@ -252,6 +265,21 @@ keybearer = {
     // Set unencrypted file MIME type
     setFileType: function(ftype){
         this._filetype = ftype;
+    },
+
+    // Set the number of PBKDF2 iterations
+    setPBKDF2Iterations: function(num){
+        this.pbkdf2_iterations = num;
+    },
+
+    // Set wordlist
+    setWordlist: function(wl){
+        this._wordlist = wl;
+    },
+
+    // Set badngramwordlist
+    setBadNGramList: function(wl){
+        this._badngramlist = wl;
     },
 
     // Get unencrypted filename
@@ -277,6 +305,16 @@ keybearer = {
     // Get number of passwords needed
     getNumToUnlock: function(){
         return this._nToUnlock;
+    },
+
+    // Get wordlist
+    getWordlist: function(){
+        return this._wordlist;
+    },
+
+    // Get ngram wordlist
+    getBadNGramList: function(){
+        return this._badngramlist;
     },
 
     // Reset generated keys
@@ -312,7 +350,6 @@ keybearer = {
         this._nToUnlock = obj.nunlock;
         this.setFileName(obj.fn); // set filename from JSON
         this.setFileType(obj.ft); // set filetype from JSON
-
         this._cipherobj = obj;
     },
 
@@ -334,6 +371,15 @@ keybearer = {
     // Get the plaintext converted to a bytearray
     getPlaintext: function(){
         return sjcl.codec.bitarrays.fromBits(this._plaintext);
+    },
+
+    // Augment an object with another object
+    augment: function(toAug, augger){
+        for(var k in augger){
+            if(augger.hasOwnProperty(k)){
+                toAug[k] = augger[k];
+            }
+        }
     }
 
 };

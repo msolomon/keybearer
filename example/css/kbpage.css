@@ -1,6 +1,6 @@
 
 body {
-    background-image: url(../img/large_leather.png);
+    background-image: url(../img/debut_light.png);
     background-repeat: repeat;
 }
 
@@ -56,7 +56,7 @@ display:inline-block;
     display: inline-block;
 }
 .mainarea {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.6);
 }
 
 .btn-group {

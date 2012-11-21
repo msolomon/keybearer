@@ -187,7 +187,7 @@ kbp = {
         var npass = kbp.getNumPass();
         var passwords = [];
         for(var i = 0; i < npass; i++){
-            passwords[i] = $('#pass' + i).val();
+            passwords[i] = keybearer.normalizeString($('#pass' + i).val());
         }
         return passwords;
     },
@@ -227,6 +227,12 @@ kbp = {
             return;
         }
         var passwords = kbp.getAllPass();
+        for(var i = 0; i < passwords.length; i++){
+            if(passwords[i].length === 0){
+                alert("Passwords cannot be blank (or only whitespace)");
+                return;
+            }
+        }
         var update_pcnt = function(pct){
             $('#ksprogressbar').width(pct * 100 + '%');
             $('#ksprogressbar').html(kbp.toPercent(pct));

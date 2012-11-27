@@ -84,16 +84,16 @@ kbp = {
                             $('#ksprogressbar').html(kbp.toPercent(e.data.c));
                             if(e.data.c == 1){ // done
                                 $('#encprogress').delay(1000).fadeOut(400);
+                                var blob = new Blob([result], {type: 'application/json'});
+                                var link = document.createElement('a');
+                                link.href = window.URL.createObjectURL(blob);
+                                link.download = keybearer.getFileName() + '.kbr.json';
+                                link.innerHTML = 'Download encrypted ' + link.download;
+                                window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
+                                $('#encdownloadlink').empty().append(link);
                             }
                             break;
                         }
-                        var blob = new Blob([result], {type: 'application/json'});
-                        var link = document.createElement('a');
-                        link.href = window.URL.createObjectURL(blob);
-                        link.download = keybearer.getFileName() + '.kbr.json';
-                        link.innerHTML = 'Download encrypted ' + link.download;
-                        window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
-                        $('#encdownloadlink').empty().append(link);
                     break;
                 }
             };

@@ -4,6 +4,8 @@ Keybearer uses several independent passwords to encrypt a file and later require
 
 All operation are performed in client-side Javascript.
 
+You can check out a [live version](http://michael-solomon.net/keybearer/) at my site.
+
 ## Example
 
 For example, Magician Mike uses Keybearer to encrypt the password to his laptop containing his secret repertoire of tricks. He gives the 3 passcodes he used to his estranged siblings Alice, Bob, and Charlie, on the condition that at least 2 of them reunite on his death to gaze on the majesty of his secrets.

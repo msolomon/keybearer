@@ -59,7 +59,7 @@ kbp = {
                              'if(d.data.p){',
                              'var params = Array.prototype.slice.call(d.data.p);',
                              'if(d.data.c){ params.push(function(pct){self.postMessage({f: d.data.f, c: pct})}) };',
-                             'var result = keybearer[d.data.f].apply(this, params);',
+                             'var result = keybearer[d.data.f].apply(keybearer, params);',
                              'if(result) self.postMessage({f: d.data.f, r: result});',
                              '} else {',
                              'var result = keybearer[d.data.f]();',
@@ -77,24 +77,22 @@ kbp = {
                 switch(handler){
                     case 'setPlaintext':
                         $('#encrypt').attr('class', 'btn').click(kbp.encrypt);
-                    break;
+                        break;
                     case 'encryptWithPasswords':
                         if(e.data.c){ // it's a progress update
                             $('#ksprogressbar').width(e.data.c * 100 + '%');
                             $('#ksprogressbar').html(kbp.toPercent(e.data.c));
-                            if(e.data.c == 1){ // done
-                                $('#encprogress').delay(1000).fadeOut(400);
-                                var blob = new Blob([result], {type: 'application/json'});
-                                var link = document.createElement('a');
-                                link.href = window.URL.createObjectURL(blob);
-                                link.download = keybearer.getFileName() + '.kbr.json';
-                                link.innerHTML = 'Download encrypted ' + link.download;
-                                window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
-                                $('#encdownloadlink').empty().append(link);
-                            }
-                            break;
+                        } else if(e.data.r){ // we are done
+                            $('#encprogress').delay(1000).fadeOut(400);
+                            var blob = new Blob([e.data.r], {type: 'application/json'});
+                            var link = document.createElement('a');
+                            link.href = window.URL.createObjectURL(blob);
+                            link.download = keybearer.getFileName() + '.kbr.json';
+                            link.innerHTML = 'Download encrypted ' + link.download;
+                            window.URL.revokeObjectURL($('#encdownloadlink > a').attr('href'));
+                            $('#encdownloadlink').empty().append(link);
                         }
-                    break;
+                        break;
                 }
             };
             kbp.kb.postMessage({f: 'makeSalt'});
